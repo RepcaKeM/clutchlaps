@@ -1,6 +1,6 @@
 # Project Architecture: Speedway Data Pipeline
 
-This project implements an automated pipeline to scrape speedway match data from `ekstraliga.pl`, transform it, and load it into a PostgreSQL database. The pipeline is containerized using Docker Compose and scheduled using cron.
+This project implements an automated pipeline to scrape speedway match data from `ekstraliga.pl`, transform it, and load it into a PostgreSQL database. The pipeline is containerized using Docker Compose.
 
 ## Components
 
@@ -17,7 +17,7 @@ The project architecture consists of the following key components:
     *   Stores the transformed speedway data.
     *   Data is persisted to the `./db_data` directory on the host machine via a mounted volume (`/var/lib/postgresql/data` in the container).
     *   The database port (5432) is exposed to the host machine, allowing external connections.
-    *   The database schema is defined in the `database/schema.sql` file.
+    *   The database schema is defined in `db_data/schema.sql`.
 
 3.  **Data Transformer (`data_transformer.py` script):**
     *   A Python script located in the `scraper_container/pipeline` directory.
@@ -32,27 +32,21 @@ The project architecture consists of the following key components:
     *   Sequentially runs the Scrapy spider (`scrapy crawl ekstraliga_match`) and the `data_transformer.py` script.
     *   Ensures the scraper completes successfully before the transformer is executed.
 
-5.  **Scheduler (`scheduler` service):**
-    *   A Docker container responsible for scheduling the data pipeline execution.
-    *   Uses cron to run commands at specified intervals.
-    *   Mounts the cronjob file from `./scheduler_container/speedway_cron` on the host to `/etc/cron.d/speedway_cron` in the container.
-    *   The cronjob is configured to execute the `run_pipeline.sh` script within the `ekstraliga_scraper` container using `docker-compose run --rm ekstraliga_scraper /app/run_pipeline.sh` every 3 days.
-
-6.  **Docker Compose (`docker-compose.yml`):**
-    *   Defines the multi-container application, including the `ekstraliga_scraper`, `db`, and `scheduler` services.
+5.  **Docker Compose (`docker-compose.yml`):**
+    *   Defines the multi-container application, including the `ekstraliga_scraper` and `db` services (and `pgadmin` for database management).
     *   Configures the build process, dependencies, environment variables, port mappings, and volume mounts for each service.
     *   Located in the root directory of the project.
 
 ## Data Flow
 
-1.  The `scheduler` service triggers the execution of the `run_pipeline.sh` script within a new instance of the `ekstraliga_scraper` container based on the cron schedule.
+1.  When the `ekstraliga_scraper` service is started (e.g., via `docker-compose up`), its defined command executes the `run_pipeline.sh` script.
 2.  The `run_pipeline.sh` script first runs the Scrapy spider.
 3.  The Scrapy spider scrapes data from `ekstraliga.pl` and saves it as JSON files in the mounted `./output/ekstraliga_scraper` directory on the host.
 4.  Upon successful completion of the scraper, the `run_pipeline.sh` script executes the `data_transformer.py` script.
 5.  The `data_transformer.py` script reads the JSON files from the mounted `./output/ekstraliga_scraper` directory (accessible within the `ekstraliga_scraper` container).
-6.  The transformer connects to the `db` service (PostgreSQL database) using the internal Docker network and environment variables.
-7.  The transformer processes the JSON data and inserts/updates records in the PostgreSQL database according to the `database/schema.sql`.
-8.  After the `run_pipeline.sh` script finishes, the `ekstraliga_scraper` container exits (`--rm` flag in `docker-compose run`).
-9.  The PostgreSQL database (`db` service) continues to run, persisting the data to the `./db_data` directory on the host.
+6.  The transformer connects to the `db` service (PostgreSQL database) using the internal Docker network and environment variables (sourced from `.env`).
+7.  The transformer processes the JSON data and inserts/updates records in the PostgreSQL database according to the `db_data/schema.sql` file.
+8.  The `ekstraliga_scraper` service executes the `run_pipeline.sh` script upon starting. Once the script completes, the container will stop as it's not designed as a long-running service but rather a task runner.
+9.  The PostgreSQL database (`db` service) and `pgadmin` service continue to run, persisting data as configured.
 
 This architecture provides a robust, automated, and containerized solution for collecting and storing speedway match data.
