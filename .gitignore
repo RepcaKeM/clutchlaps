@@ -1,0 +1,41 @@
+# Environment variables
+.env
+
+# Database data
+db_data/
+pgadmin_data/
+
+# Logs
+logs/
+scraper_container/**/logs/
+scraper_container/**/**/logs/
+*scraper.log
+*.log
+
+# Output files
+output/
+
+# Python specific
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.pytest_cache/
+
+# IDE / Editor specific
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS specific
+.DS_Store
+Thumbs.db

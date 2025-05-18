@@ -1,0 +1,4 @@
+scrapy
+playwright
+scrapy-playwright
+psycopg2-binary

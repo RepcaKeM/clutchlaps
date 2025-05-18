@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  ekstraliga_scraper:
+    build:
+      context: ./scraper_container
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+    environment:
+      # DATABASE_URL: postgresql://user:password@db:5432/mydatabase
+      POSTGRES_HOST: db
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    command: wait-for-db.sh db bash -c '/app/run_pipeline.sh'
+    volumes:
+      - ./logs/ekstraliga_scraper:/app/ekstraligapl/logs
+      - ./logs/data_transformer:/app/logs/data_transformer
+      - ./output/ekstraliga_scraper:/app/ekstraligapl/output
+      - ./output/data_transformer:/app/output/data_transformer
+      - ./scraper_container/pipeline/data_transformer.py:/app/data_transformer.py
+      - ./scraper_container/pipeline/run_pipeline.sh:/app/run_pipeline.sh
+
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./db_data:/var/lib/postgresql/data
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    ports:
+      - "5050:80"
+    volumes:
+      - ./pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - db
+
+volumes:
+  db_data:
+  pgadmin_data:
