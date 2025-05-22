@@ -8,17 +8,6 @@ cd /app
 
 # Run the scraper script
 echo "Running scraper..."
-python data_transformer.py
-#!/bin/bash
-
-# Make the script executable
-chmod +x /app/run_pipeline.sh
-
-# Navigate to the app directory where scripts are mounted
-cd /app
-
-# Run the scraper script
-echo "Running scraper..."
 cd /app/ekstraligapl # Navigate to the Scrapy project directory
 scrapy crawl ekstraliga_match
 # Check if scraper ran successfully
